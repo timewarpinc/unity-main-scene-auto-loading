@@ -1,20 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using SaG.MainSceneAutoLoading.MainSceneLoadedHandlers;
+﻿using SaG.MainSceneAutoLoading.MainSceneLoadedHandlers;
 using SaG.MainSceneAutoLoading.MainSceneProviders;
 using SaG.MainSceneAutoLoading.PlaymodeExitedHandlers;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
 namespace SaG.MainSceneAutoLoading.Settings
 {
     public sealed class MainSceneAutoLoadingSettings : ScriptableObject
     {
-        private const string DefaultAssetPath = "Assets/MainSceneAutoLoadingSettings.asset";
-        private static string AssetPathKey => $"{Application.dataPath}_MainSceneAutoLoadingSettingsPath";
+        private const string AssetPath = "ProjectSettings/MainSceneAutoLoadingSettings.asset";
 
         public bool Enabled = true;
 
@@ -49,15 +44,18 @@ namespace SaG.MainSceneAutoLoading.Settings
                 return settings;
             }
 
-            settings = ScriptableObject.CreateInstance<MainSceneAutoLoadingSettings>();
-            settings.Enabled = true;
-            settings._mainSceneProvider = new FirstSceneInBuildSettings();
-            settings._mainSceneLoadedHandler = new LoadAllLoadedScenes();
-            settings._playmodeExitedHandler = new RestoreSceneManagerSetup();
-            AssetDatabase.CreateAsset(settings, DefaultAssetPath);
-            AssetDatabase.SaveAssets();
+            settings = CreateInstance<MainSceneAutoLoadingSettings>();
+            settings.Save();
 
             return settings;
+        }
+
+        private void Save()
+        {
+            UnityEditorInternal.InternalEditorUtility.SaveToSerializedFileAndForget(new Object[]
+            {
+                this
+            }, AssetPath, true);
         }
 
         internal static SerializedObject GetSerializedSettings()
@@ -67,24 +65,18 @@ namespace SaG.MainSceneAutoLoading.Settings
 
         internal static bool TryLoadAsset(out MainSceneAutoLoadingSettings settings)
         {
-            string assetPath = EditorPrefs.GetString(AssetPathKey, DefaultAssetPath);
-            // try to load at the saved or default path
-            settings = AssetDatabase.LoadAssetAtPath<MainSceneAutoLoadingSettings>(assetPath);
+            settings = AssetDatabase.LoadAssetAtPath<MainSceneAutoLoadingSettings>(AssetPath);
             if (settings != null)
                 return true;
 
-            // if no asset at path try to find it in project's assets
-            var assetGuid = AssetDatabase.FindAssets($"t:{typeof(MainSceneAutoLoadingSettings)}").FirstOrDefault();
-            if (string.IsNullOrEmpty(assetGuid))
-                return false;
-            assetPath = AssetDatabase.GUIDToAssetPath(assetGuid);
-            settings = AssetDatabase.LoadAssetAtPath<MainSceneAutoLoadingSettings>(assetPath);
-            
-            if (settings == null)
-                return false;
-            
-            EditorPrefs.SetString(AssetPathKey, assetPath);
-            return true;
+            var objects =
+                UnityEditorInternal.InternalEditorUtility.LoadSerializedFileAndForget(AssetPath);
+            if (objects is { Length: > 0 })
+            {
+                settings = objects[0] as MainSceneAutoLoadingSettings;
+            }
+
+            return settings != null;
         }
     }
 }
