@@ -103,7 +103,7 @@ namespace SaG.MainSceneAutoLoading
             var expandedInHierarchyObjects = SceneHierarchyUtility.GetExpandedGameObjects()
                 .Select(go => GlobalObjectId.GetGlobalObjectIdSlow(go)).ToArray();
             var expandedScenes = SceneHierarchyUtility.GetExpandedSceneNames();
-            CurrentArgs = new LoadMainSceneArgs(loadedScenes, selectedGameObjectsIds, expandedInHierarchyObjects,
+            CurrentArgs = new LoadMainSceneArgs(mainScene, loadedScenes, selectedGameObjectsIds, expandedInHierarchyObjects,
                 expandedScenes);
         }
 

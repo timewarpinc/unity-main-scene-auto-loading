@@ -8,26 +8,31 @@ namespace SaG.MainSceneAutoLoading
 {
     public class LoadMainSceneArgs
     {
+        public readonly SceneAsset MainScene;
         public readonly SceneSetup[] SceneSetups;
         public readonly GlobalObjectId[] SelectedInHierarchyObjects;
         public readonly GlobalObjectId[] ExpandedInHierarchyObjects;
         public readonly List<string> ExpandedScenes;
 
         public LoadMainSceneArgs(
+            SceneAsset mainScene,
             SceneSetup[] sceneSetups,
             GlobalObjectId[] selectedInHierarchyObjects,
             GlobalObjectId[] expandedInHierarchyObjects,
             List<string> expandedScenes)
         {
+            MainScene = mainScene;
             SceneSetups = sceneSetups;
             SelectedInHierarchyObjects = selectedInHierarchyObjects;
             ExpandedInHierarchyObjects = expandedInHierarchyObjects;
             ExpandedScenes = expandedScenes;
+            MainScene = mainScene;
         }
 
         [System.Serializable]
         private class SaveData
         {
+            public SceneAsset MainScene;
             public SceneSetup[] SceneSetups;
             public string[] SelectedInHierarchyObjects;
             public string[] ExpandedInHierarchyObjects;
@@ -38,6 +43,7 @@ namespace SaG.MainSceneAutoLoading
         {
             var saveData = new SaveData()
             {
+                MainScene = MainScene,
                 SceneSetups = SceneSetups,
                 SelectedInHierarchyObjects = SelectedInHierarchyObjects.Select(x => x.ToString()).ToArray(),
                 ExpandedInHierarchyObjects = ExpandedInHierarchyObjects.Select(x => x.ToString()).ToArray(),
@@ -51,8 +57,9 @@ namespace SaG.MainSceneAutoLoading
         public static LoadMainSceneArgs Deserialize(string json)
         {
             var saveData = JsonUtility.FromJson<SaveData>(json);
-            
+
             var args = new LoadMainSceneArgs(
+                saveData.MainScene,
                 saveData.SceneSetups,
                 ParseGlobalObjectIds(saveData.SelectedInHierarchyObjects),
                 ParseGlobalObjectIds(saveData.ExpandedInHierarchyObjects),
@@ -75,6 +82,5 @@ namespace SaG.MainSceneAutoLoading
 
             return ids.ToArray();
         }
-        
     }
 }
