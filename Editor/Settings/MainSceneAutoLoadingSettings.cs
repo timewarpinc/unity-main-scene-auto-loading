@@ -50,7 +50,7 @@ namespace SaG.MainSceneAutoLoading.Settings
             return settings;
         }
 
-        private void Save()
+        internal void Save()
         {
             UnityEditorInternal.InternalEditorUtility.SaveToSerializedFileAndForget(new Object[]
             {
