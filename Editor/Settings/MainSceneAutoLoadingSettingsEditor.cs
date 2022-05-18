@@ -31,7 +31,14 @@ namespace SaG.MainSceneAutoLoading.Settings
                 typeof(IPlaymodeExitedHandler));
 
             EditorGUIUtility.labelWidth = labelWidth;
+            
+            if(GUI.changed && target != null)
+                EditorUtility.SetDirty(target);
+
             serializedObject.ApplyModifiedProperties();
+
+            if (EditorUtility.IsDirty(target))
+                ((MainSceneAutoLoadingSettings)target).Save();
         }
 
         private void DrawRealization(SerializedProperty serializedProperty, Type addType)
@@ -59,6 +66,7 @@ namespace SaG.MainSceneAutoLoading.Settings
                     {
                         serializedProperty.managedReferenceValue = Activator.CreateInstance(type);
                         serializedProperty.serializedObject.ApplyModifiedProperties();
+                        EditorUtility.SetDirty(target);
                     });
                 }
 
