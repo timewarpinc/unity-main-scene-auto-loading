@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using JetBrains.Annotations;
 using Unity.EditorCoroutines.Editor;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -60,18 +61,12 @@ namespace SaG.MainSceneAutoLoading.Utilities
             SceneHierarchyUtility.SetScenesExpanded(args.ExpandedScenes);
 
             var ids = args.SelectedInHierarchyObjects;
-            List<GameObject> selection = new List<GameObject>(ids.Length);
-            bool isMissingObjects = false;
-            for (var i = 0; i < ids.Length; i++)
-            {
-                var id = ids[i];
-                var isPrefab = id.targetPrefabId != 0;
-                if (isPrefab && Application.isPlaying)
-                {
-                    id = ConvertPrefabGidToUnpackedGid(id);
-                }
+            var selection = new List<GameObject>(ids.Length);
+            var isMissingObjects = false;
 
-                var obj = GlobalObjectId.GlobalObjectIdentifierToObjectSlow(id) as GameObject;
+            foreach (var t in ids)
+            {
+                var obj = ConvertToGameObject(t);
                 if (obj == null)
                 {
                     isMissingObjects = true;
@@ -83,23 +78,17 @@ namespace SaG.MainSceneAutoLoading.Utilities
 
             Selection.objects = selection.ToArray();
 
-            for (var i = 0; i < args.ExpandedInHierarchyObjects.Length; i++)
+            foreach (var t in args.ExpandedInHierarchyObjects)
             {
-                var id = args.ExpandedInHierarchyObjects[i];
-                var isPrefab = id.targetPrefabId != 0;
-                if (isPrefab && Application.isPlaying)
-                {
-                    id = ConvertPrefabGidToUnpackedGid(id);
-                }
+                var obj = ConvertToGameObject(t);
 
-                var obj = GlobalObjectId.GlobalObjectIdentifierToObjectSlow(id);
-                if (obj == null || !(obj is GameObject))
+                if (obj == null)
                 {
                     isMissingObjects = true;
                     continue;
                 }
 
-                SceneHierarchyUtility.SetExpanded(obj as GameObject, true);
+                SceneHierarchyUtility.SetExpanded(obj, true);
             }
 
             if (isMissingObjects)
@@ -116,6 +105,35 @@ namespace SaG.MainSceneAutoLoading.Utilities
                 $"GlobalObjectId_V1-{id.identifierType}-{id.assetGUID}-{fileId}-0",
                 out GlobalObjectId unpackedGid);
             return unpackedGid;
+        }
+
+        private static GlobalObjectId ConvertToGlobalObject(GlobalObjectId id)
+        {
+            GlobalObjectId.TryParse(
+                $"GlobalObjectId_V1-{id.identifierType}-00000000000000000000000000000000-{id.targetObjectId}-0",
+                out var unpackedGid);
+            return unpackedGid;
+        }
+
+        [CanBeNull]
+        private static GameObject ConvertToGameObject(GlobalObjectId id)
+        {
+            var isPrefab = id.targetPrefabId != 0;
+            if (isPrefab && Application.isPlaying)
+            {
+                id = ConvertPrefabGidToUnpackedGid(id);
+            }
+
+            var obj = GlobalObjectId.GlobalObjectIdentifierToObjectSlow(id) as GameObject;
+            if (obj == null)
+            {
+                // unfortunately this does not work as unity does not return objects that are in DontDestroyOnLoad scene
+                obj = GlobalObjectId.GlobalObjectIdentifierToObjectSlow(
+                    ConvertToGlobalObject(id)
+                ) as GameObject;
+            }
+
+            return obj;
         }
     }
 }
